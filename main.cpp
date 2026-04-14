@@ -5,19 +5,42 @@
 #include <cstring>
 #include <thread>
 #include <vector>
+#include <mutex>
+#include <algorithm>
+#include <vector>
+
+std::vector<int> clients;
+std::mutex clients_mutex;
+
+void broadcast_message(const std::string& message, int server_fd) {
+    std::lock_guard<std::mutex> lock(clients_mutex);
+
+    for (int client_fd : clients) {
+        if (client_fd != server_fd) {
+            send(client_fd, message.c_str(), message.length(), 0);
+        }
+    }
+}
 
 void handle_client(int client_socket) {
     char buffer[1024] = {0};
 
-    std::string welcome = "Welcome to chat. Write something,\n";
-    send(client_socket, welcome.c_str(), welcome.length(),0);
+    while (true) {
+        memset(buffer, 0, 1024);
+        int bytes_recived = recv(client_socket, buffer, 1024, 0);
 
-    int valread = recv(client_socket, buffer, 1024, 0);
-    if (valread > 0) {
-        std::cout << "Client say: "<<buffer<<std::endl;
+        if (bytes_recived <= 0) {
+            std::cout << "Client disconnected (socket " << client_socket << ")\n";
+            break;
+        }
+        std::string msg = "Client "+std::to_string(client_socket) + ": "+std::string(buffer);
+        broadcast_message(msg, client_socket);
     }
 
-    std::cout << "Closing connection to client.\n";
+    {
+        std::lock_guard<std::mutex> lock(clients_mutex);
+        clients.erase(std::remove(clients.begin(), clients.end(), client_socket), clients.end());
+    }
     close(client_socket);
 }
 
@@ -54,14 +77,14 @@ int main() {
 
         int client_socket = accept(server_fd, (struct sockaddr *)& client_address, &addrlen);
 
-        if (client_socket < 0) {
-            perror("Error accepting connection");
-            continue;
+        if (client_socket >= 0) {
+            {
+                std::lock_guard<std::mutex> lock(clients_mutex);
+                clients.push_back(client_socket);
+            }
+            std::cout << "New client connected. Waiting for connection at port 8080\n";
+            std::thread(handle_client, client_socket).detach();
         }
-
-        std::cout << "New client connected: " << client_socket << std::endl;
-
-        std::thread (handle_client, client_socket).detach();
     }
 
     return 0;

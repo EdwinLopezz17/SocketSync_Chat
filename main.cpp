@@ -36,10 +36,14 @@ void handle_client(int client_socket) {
         broadcast_message(msg, client_socket);
     }
 
-    {
-        std::lock_guard<std::mutex> lock(clients_mutex);
-        clients.erase(std::remove(clients.begin(), clients.end(), client_socket), clients.end());
-    }
+
+    std::lock_guard<std::mutex> lock(clients_mutex);
+    clients.erase(std::remove(clients.begin(), clients.end(), client_socket), clients.end());
+
+    std::string leave_msg = "[System] Client "+std::to_string(client_socket)+ " leave the chat.\n";
+    broadcast_message(leave_msg, -1);
+
+    std::cout <<"Conection closed "<<client_socket<<std::endl;
     close(client_socket);
 }
 
@@ -81,6 +85,10 @@ int main() {
                 std::lock_guard<std::mutex> lock(clients_mutex);
                 clients.push_back(client_socket);
             }
+
+            std::string join_msg = "[System] Client "+std::to_string(client_socket)+ " joined to chat.\n";
+            broadcast_message(join_msg, client_socket);
+
             std::cout << "New client connected. Waiting for connection at port 8080\n";
             std::thread(handle_client, client_socket).detach();
         }

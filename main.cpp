@@ -7,7 +7,6 @@
 #include <vector>
 #include <mutex>
 #include <algorithm>
-#include <vector>
 
 std::vector<int> clients;
 std::mutex clients_mutex;

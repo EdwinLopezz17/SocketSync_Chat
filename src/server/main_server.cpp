@@ -32,7 +32,8 @@ void handle_client(int client_socket) {
             std::cout << "Client disconnected (socket " << client_socket << ")\n";
             break;
         }
-        std::string msg = "Client "+std::to_string(client_socket) + ": "+std::string(buffer);
+        //make message
+        std::string msg = std::string(buffer);
         broadcast_message(msg, client_socket);
     }
 
@@ -43,7 +44,7 @@ void handle_client(int client_socket) {
     std::string leave_msg = "[System] Client "+std::to_string(client_socket)+ " leave the chat.\n";
     broadcast_message(leave_msg, -1);
 
-    std::cout <<"Conection closed "<<client_socket<<std::endl;
+    std::cout <<"Connection closed "<<client_socket<<std::endl;
     close(client_socket);
 }
 

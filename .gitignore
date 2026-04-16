@@ -1,7 +1,8 @@
-.idea/
 cmake-build-debug/
 cmake-build-release/
 
-*.o
-*.out
-SocketSync_Chat
+.idea/
+
+SocketSync_Server
+ChatClient_CLI
+ChatClient_GUI
